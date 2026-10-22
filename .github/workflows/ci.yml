@@ -1,0 +1,24 @@
+name: CI
+# GitHub Actions est coupé sur le compte : la vérification se joue en local par
+# 00-Archi-NextGen/_routine/deploy/ci-local.sh (porte de ng-deploy). Relançable à la main.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    name: Types, lint, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npm run build

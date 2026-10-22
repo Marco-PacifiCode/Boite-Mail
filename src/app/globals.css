@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+/*
+ * Les couleurs viennent du thème du commerce (variables posées par le layout, voir
+ * src/lib/commerces/theme.ts). Tailwind les expose comme couleurs : bg-surface, text-attenue…
+ */
+@theme inline {
+  --color-fond: var(--fond);
+  --color-surface: var(--surface);
+  --color-releve: var(--releve);
+  --color-saisie: var(--saisie);
+  --color-texte: var(--texte);
+  --color-attenue: var(--attenue);
+  --color-bordure: var(--bordure);
+  --color-bordure-forte: var(--bordure-forte);
+  --color-accent: var(--accent);
+  --color-sur-accent: var(--sur-accent);
+  --color-encre-accent: var(--encre-accent);
+  --color-selection: var(--selection);
+  --color-etoile: var(--etoile);
+  --color-toast-fond: var(--toast-fond);
+  --color-toast-texte: var(--toast-texte);
+  --color-toast-action: var(--toast-action);
+  --color-ia-fond: var(--ia-fond);
+  --color-depot-fond: var(--depot-fond);
+  --color-alerte-fond: var(--alerte-fond);
+  --color-alerte-texte: var(--alerte-texte);
+  --color-voile: var(--voile);
+  --color-balayage-archiver: var(--balayage-archiver);
+  --color-balayage-supprimer: var(--balayage-supprimer);
+  --color-sur-balayage: var(--sur-balayage);
+  --color-anneau: var(--anneau);
+  --color-panneau-fond: var(--panneau-fond);
+  --color-panneau-texte: var(--panneau-texte);
+  --font-texte: var(--police-texte);
+  --font-titres: var(--police-titres);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--police-texte);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+input,
+textarea,
+select,
+label {
+  touch-action: manipulation;
+}
+
+button:not(:disabled),
+[role="button"],
+label[for] {
+  cursor: pointer;
+}
+
+/* Focus clavier visible partout, à la couleur d'anneau du thème (3:1 au moins). */
+:focus-visible {
+  outline: 2px solid var(--anneau);
+  outline-offset: 2px;
+}
+
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.sans-barre {
+  scrollbar-width: none;
+}
+.sans-barre::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes b-fondu {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes b-pousse {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes b-monte {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes b-tiroir {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+@keyframes b-feuille {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@utility anim-fondu {
+  animation: b-fondu 180ms ease-out;
+}
+@utility anim-pousse {
+  animation: b-pousse 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@utility anim-monte {
+  animation: b-monte 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@utility anim-tiroir {
+  animation: b-tiroir 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@utility anim-feuille {
+  animation: b-feuille 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
