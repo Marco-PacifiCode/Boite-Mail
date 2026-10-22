@@ -9,7 +9,7 @@
   du dépôt. Vrais commerces (liste, marques, démos) hors dépôt : `BOITE_COMMERCES_FICHIER`, `BOITE_MARQUES_DOSSIER`
   (servi par `/marque/...`), `BOITE_DEMO_DOSSIER` (décision Marco du 22/10 : le dépôt public ne montre aucun client).
 - Données : démonstration en mémoire (`BOITE_SOURCE=demo`) ; `src/lib/mail/core-comms.ts` lève « non branché ».
-- Connexion : `BOITE_AUTH=demo` (tout mot de passe non vide) ou `core-auth` (POST /api/login, tenant vérifié,
+- Connexion : `BOITE_AUTH=demo` (bouton « Entrer », aucun champ) ou `core-auth` (POST /api/login, tenant vérifié,
   jeton gardé dans le cookie signé HMAC pour core_comms). Essayé contre un faux core_auth local le 22/10.
 - Écrans : boîte (ordinateur ≥ 1024 px / téléphone), connexion, paramètres. Agenda et Contacts masqués.
 
