@@ -1,0 +1,105 @@
+{
+  "$commentaire": "Exemple de configuration des commerces. En production, le vrai fichier vit hors du dépôt (BOITE_COMMERCES_FICHIER). Les tenantId ci-dessous sont des valeurs de démonstration.",
+  "commerces": [
+    {
+      "hote": "localhost",
+      "alias": [
+        "127.0.0.1",
+        "opaline.localhost"
+      ],
+      "slug": "opaline",
+      "tenantId": "demo-opaline",
+      "nom": "Salon Opaline",
+      "accroche": "Coiffure & beauté",
+      "domaine": "salon-opaline.nc",
+      "fuseau": "Pacific/Noumea",
+      "theme": {
+        "clair": {
+          "fond": "#F7F2F4",
+          "accent": "#7A3E65",
+          "surAccent": "#FFFFFF",
+          "encreAccent": "#7A3E65",
+          "selection": "#F4E8EF",
+          "iaFond": "#F7F2F4",
+          "anneau": "#7A3E65",
+          "panneauFond": "#7A3E65",
+          "panneauTexte": "#FFFFFF"
+        },
+        "sombre": {
+          "accent": "#E2A6CC",
+          "surAccent": "#141215",
+          "encreAccent": "#E2A6CC",
+          "selection": "#3A2534",
+          "anneau": "#E2A6CC",
+          "panneauFond": "#3A2534",
+          "panneauTexte": "#EDEAEE"
+        },
+        "polices": {
+          "texte": "manrope",
+          "titres": "fraunces"
+        },
+        "logo": {
+          "initiale": "O"
+        },
+        "icones": {
+          "favicon": "/commerces/opaline/icon.svg",
+          "icone192": "/commerces/opaline/icon.svg",
+          "icone512": "/commerces/opaline/icon.svg"
+        },
+        "couleurPwa": "#7A3E65",
+        "fondPwa": "#F7F2F4"
+      },
+      "boites": [
+        {
+          "id": "accueil",
+          "adresse": "contact@salon-opaline.nc",
+          "libelle": "Boîte de réception",
+          "description": "Tout le courrier du salon.",
+          "accueil": true,
+          "signature": "Clara Moreau\nSalon Opaline · Coiffure & beauté\nsalon-opaline.nc"
+        }
+      ],
+      "libelles": [
+        {
+          "id": "client",
+          "nom": "Clients",
+          "teinte": "bleu"
+        },
+        {
+          "id": "rdv",
+          "nom": "Rendez-vous",
+          "teinte": "violet"
+        },
+        {
+          "id": "fournisseur",
+          "nom": "Fournisseurs",
+          "teinte": "orange"
+        },
+        {
+          "id": "facture",
+          "nom": "Factures",
+          "teinte": "vert"
+        }
+      ],
+      "reponsesTypes": [
+        {
+          "titre": "Confirmer le rendez-vous",
+          "corps": "Bonjour {prenom},\n\nC’est noté : votre rendez-vous est confirmé le [jour] à [heure]. En cas d’empêchement, prévenez-nous la veille.\n\nÀ très bientôt au salon !"
+        },
+        {
+          "titre": "Proposer un autre créneau",
+          "corps": "Bonjour {prenom},\n\nLe créneau demandé est déjà pris, mais nous pouvons vous recevoir le [jour] à [heure] ou à [heure]. Dites-nous ce qui vous arrange.\n\nBelle journée !"
+        },
+        {
+          "titre": "Envoyer nos tarifs",
+          "corps": "Bonjour {prenom},\n\nMerci pour votre message. Vous trouverez nos tarifs en pièce jointe ; pour un forfait de groupe, nous préparons un devis sur mesure sous 48 h.\n\nÀ bientôt,"
+        }
+      ],
+      "connexion": {
+        "titre": "La messagerie de toute l’équipe.",
+        "texte": "Vos clients, vos fournisseurs et vos rendez-vous au même endroit, sur ordinateur comme sur téléphone.",
+        "exempleAdresse": "clara@salon-opaline.nc"
+      }
+    }
+  ]
+}
