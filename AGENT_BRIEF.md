@@ -1,6 +1,8 @@
 # AGENT_BRIEF — Boite-Mail
 
 ## État courant (22/10/2026)
+- **Aperçu en ligne** : https://demo-mail.pacificode.nc (faux mails du studio, bouton « Entrer », page non indexée),
+  livré le 22/10 à 20:03 NC, parcours témoin vert. Rien n'est relié aux vrais mails.
 - Appli de boîte mail unique de l'écosystème (Next 16.2.7, App Router, Tailwind 4), dépôt public sans secret.
 - Commerce choisi par l'en-tête `host` ; configuration JSON hors dépôt (`BOITE_COMMERCES_FICHIER`).
   Exemple versionné : `config/commerces.exemple.json` (Salon Opaline, fictif, sur `localhost`) — le seul commerce
@@ -12,11 +14,12 @@
 - Écrans : boîte (ordinateur ≥ 1024 px / téléphone), connexion, paramètres. Agenda et Contacts masqués.
 
 ## En cours / à faire
-- Aperçu en ligne en démonstration (faux mails, thème du studio), accordé par Marco (QCM du 22/10) : dépôt public et
-  préparation faits, livraison en attente du créneau de 00-Architecture, adresse publique ensuite.
-- Adaptateur `core-comms.ts` : contrat reçu de la session Core-Comms (`01-Core-Comms/core/lib/mail/CONTRAT.md` §3, branche
-  `claude/entree-mail-unique`, non fusionnée). Remarques envoyées : nom du cookie de session, dossiers suivis/envoyés/
-  corbeille, compteurs. Pas de pièce jointe sortante en v1 : masquer le trombone en mode core-comms.
+- Adaptateur `core-comms.ts`, dans ce dépôt et sur sa propre branche, en face de `01-Core-Comms` `core/lib/mail/CONTRAT.md`
+  §3 (citer le chemin, jamais un SHA : la branche Core-Comms est rebasée le 23/10). Le cookie : renvoyer
+  `session.cookieName` tel quel dans `X-Session-Cookie-Name`. En v1, masquer en mode core-comms les dossiers suivis,
+  envoyés et corbeille, les compteurs « à trier » et indésirables, et le trombone (pas de pièce jointe sortante) ;
+  Core-Comms les ajoute en v2. Clé `COMMS_MAIL_APP_KEY`, vhost, DNS et mise en ligne de mail.studiokdanse.nc : après le
+  créneau Core-Comms, chacun avec son QCM.
 - Implémentation `core-comms` quand l'API `/api/mail/*` existera (jeton core_auth transmis, amendement 1).
 - Extensions de contrat à demander à core_comms : compteurs par dossier, `suivi` et `supprime` dans le PATCH,
   stockage des paramètres utilisateur, brouillons.
@@ -34,3 +37,5 @@
   tape un vrai mot de passe) ; livrable autonome sans la configuration privée ; parcours témoin `deploy/temoin.sh`.
 - 22/10 : dépôt GitHub public ouvert avec un historique repris en un seul commit (les premiers commits contenaient des
   données du studio ; l'historique d'origine reste en sauvegarde locale, jamais publié).
+- 22/10 : aperçu livré (QCM de Marco, créneau 00-Architecture) : témoin vert, faux mails seulement vérifiés, adresse publique
+  ouverte juste après.
