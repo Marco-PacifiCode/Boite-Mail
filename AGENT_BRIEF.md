@@ -12,8 +12,11 @@
 - Écrans : boîte (ordinateur ≥ 1024 px / téléphone), connexion, paramètres. Agenda et Contacts masqués.
 
 ## En cours / à faire
-- Aperçu en ligne en démonstration (faux mails, thème du studio) : mise en ligne accordée par Marco (QCM du 22/10,
-  « Oui, tout dans l'ordre ») : dépôt public, cible de déploiement, serveur, DNS, puis livraison au créneau de 00-Architecture.
+- Aperçu en ligne en démonstration (faux mails, thème du studio), accordé par Marco (QCM du 22/10) : dépôt public et
+  préparation faits, livraison en attente du créneau de 00-Architecture, adresse publique ensuite.
+- Adaptateur `core-comms.ts` : contrat reçu de la session Core-Comms (`01-Core-Comms/core/lib/mail/CONTRAT.md` §3, branche
+  `claude/entree-mail-unique`, non fusionnée). Remarques envoyées : nom du cookie de session, dossiers suivis/envoyés/
+  corbeille, compteurs. Pas de pièce jointe sortante en v1 : masquer le trombone en mode core-comms.
 - Implémentation `core-comms` quand l'API `/api/mail/*` existera (jeton core_auth transmis, amendement 1).
 - Extensions de contrat à demander à core_comms : compteurs par dossier, `suivi` et `supprime` dans le PATCH,
   stockage des paramètres utilisateur, brouillons.
@@ -29,3 +32,5 @@
   marques et démos des vrais commerces sorties du dépôt.
 - 22/10 : démonstration sans mot de passe (bouton « Entrer dans la démonstration », décision Marco : personne n'y
   tape un vrai mot de passe) ; livrable autonome sans la configuration privée ; parcours témoin `deploy/temoin.sh`.
+- 22/10 : dépôt GitHub public ouvert avec un historique repris en un seul commit (les premiers commits contenaient des
+  données du studio ; l'historique d'origine reste en sauvegarde locale, jamais publié).
