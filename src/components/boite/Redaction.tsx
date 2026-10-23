@@ -1,8 +1,10 @@
 "use client";
 
+import { appel } from "@/lib/erreurs";
+
 import { useId, useState, useTransition } from "react";
 import { envoyer, iaRediger, iaReecrire } from "@/app/actions";
-import type { Boite, Conversation, EtatBoites, ModeReecriture, Parametres } from "@/lib/mail/types";
+import type { Boite, Capacites, Conversation, EtatBoites, ModeReecriture, Parametres } from "@/lib/mail/types";
 import { Icone } from "../Icone";
 import { BoutonIcone, gestionnairesDepot, type EtatGlisse } from "./commun";
 import { taille } from "./outils";
@@ -39,9 +41,11 @@ export function Redaction({
   glisse,
   setGlisse,
   large,
+  capacites,
 }: {
   r: EtatRedaction;
   large: boolean;
+  capacites: Capacites;
   onChange: (patch: Partial<EtatRedaction>) => void;
   onFermer: () => void;
   onEnvoye: (c: Conversation, etat: EtatBoites, texte: string) => void;
@@ -57,14 +61,14 @@ export function Redaction({
   const titre = r.mode === "reponse" ? "Répondre" : r.mode === "transfert" ? "Transférer" : "Nouveau message";
   const signatureActive = r.mode === "nouveau" ? parametres.signatureNouveaux : parametres.signatureReponses;
   const signature = signatureActive ? (parametres.signatures[r.boiteId] ?? "") : "";
-  const iaActive = parametres.ia.redaction;
+  const iaActive = capacites.ia && parametres.ia.redaction;
   const corpsVide = !r.corps.trim() || /^Bonjour[^,\n]*,$/.test(r.corps.trim());
   const vide = corpsVide && (r.mode === "reponse" || !r.a.trim()) && r.fichiers.length === 0;
 
   const depot = gestionnairesDepot(
     {
       cle: "redaction",
-      accepte: (c, fichiers) => fichiers || c?.type === "piece",
+      accepte: (c, fichiers) => capacites.piecesJointesSortantes && (fichiers || c?.type === "piece"),
       surDepot: (c, fichiers) => {
         if (c?.type === "piece") {
           if (!r.references.some((x) => x.id === c.id)) onChange({ references: [...r.references, { id: c.id, nom: c.nom, taille: c.taille }] });
@@ -79,7 +83,7 @@ export function Redaction({
   const rediger = () =>
     demarrer(async () => {
       try {
-        const texte = await iaRediger({ conversationId: r.conversationId, consigne: r.consigne, boiteId: r.boiteId });
+        const texte = await appel(iaRediger({ conversationId: r.conversationId, consigne: r.consigne, boiteId: r.boiteId }));
         onChange({
           corps: texte,
           note: r.consigne.trim()
@@ -94,7 +98,7 @@ export function Redaction({
   const reecrire = (o: (typeof OUTILS)[number]) =>
     demarrer(async () => {
       try {
-        onChange({ corps: await iaReecrire(r.corps, o.mode), note: o.note });
+        onChange({ corps: await appel(iaReecrire(r.corps, o.mode)), note: o.note });
       } catch (e) {
         setErreur(e instanceof Error ? e.message : "L’IA n’a pas pu réécrire le texte.");
       }
@@ -117,7 +121,7 @@ export function Redaction({
     r.references.forEach((x) => fd.append("references", x.id));
     demarrerEnvoi(async () => {
       try {
-        const { conversation, etat } = await envoyer(fd);
+        const { conversation, etat } = await appel(envoyer(fd));
         onEnvoye(conversation, etat, r.mode === "reponse" ? "Réponse envoyée" : `Message envoyé à ${r.a.replace(/\s*<.*>$/, "")}.`);
       } catch (e) {
         setErreur(e instanceof Error ? e.message : "L’envoi a échoué.");
@@ -145,10 +149,10 @@ export function Redaction({
         <h2 id={`${id}-titre`} className="m-0 min-w-0 flex-1 pl-1 text-[17px] font-bold lg:pl-0 lg:text-[14.5px]">
           {titre}
         </h2>
-        <label htmlFor={`${id}-fichier`} title="Joindre un fichier" className="flex size-11 shrink-0 items-center justify-center rounded-xl lg:hidden">
+        {capacites.piecesJointesSortantes && <label htmlFor={`${id}-fichier`} title="Joindre un fichier" className="flex size-11 shrink-0 items-center justify-center rounded-xl lg:hidden">
           <Icone nom="trombone" />
           <span className="sr-only">Joindre un fichier</span>
-        </label>
+        </label>}
         <button
           type="button"
           onClick={soumettre}
@@ -340,13 +344,13 @@ export function Redaction({
           <Icone nom="envoyes" taille={16} epaisseur={2} />
           {envoi ? "Envoi…" : "Envoyer"}
         </button>
-        <label htmlFor={`${id}-fichier`} title="Joindre un fichier" className="flex size-11 items-center justify-center rounded-xl hover:bg-releve">
+        {capacites.piecesJointesSortantes && <label htmlFor={`${id}-fichier`} title="Joindre un fichier" className="flex size-11 items-center justify-center rounded-xl hover:bg-releve">
           <Icone nom="trombone" />
           <span className="sr-only">Joindre un fichier</span>
-        </label>
-        <span className="ml-auto text-[12.5px] text-attenue">Glissez des fichiers ici pour les joindre</span>
+        </label>}
+        {capacites.piecesJointesSortantes && <span className="ml-auto text-[12.5px] text-attenue">Glissez des fichiers ici pour les joindre</span>}
       </div>
-      <input
+      {capacites.piecesJointesSortantes && <input
         id={`${id}-fichier`}
         type="file"
         multiple
@@ -356,9 +360,9 @@ export function Redaction({
           if (f.length) onChange({ fichiers: [...r.fichiers, ...f] });
           e.target.value = "";
         }}
-      />
+      />}
 
-      {survol && (
+      {capacites.piecesJointesSortantes && survol && (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-2 flex items-center justify-center rounded-[14px] border-2 border-dashed border-encre-accent bg-depot-fond text-[16px] font-bold text-encre-accent"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Conversation, Message, PieceJointe, ResumeIA } from "@/lib/mail/types";
+import type { Capacites, Conversation, Message, PieceJointe, ResumeIA } from "@/lib/mail/types";
 import { Icone } from "../Icone";
 import { Avatar, BoutonIcone, Puce, type CommerceClient } from "./commun";
 import { CorpsMessage } from "./CorpsMessage";
@@ -29,12 +29,18 @@ export function Lecture({
   commerce,
   large,
   actions,
+  imagesParServeur = false,
+  onChargerImages,
+  capacites,
 }: {
   conversation: Conversation;
   ia: ResumeIA | null;
   commerce: CommerceClient;
   large: boolean;
   actions: ActionsLecture;
+  imagesParServeur?: boolean;
+  onChargerImages?: () => void;
+  capacites: Capacites;
 }) {
   const c = conversation;
   const n = c.messages.length;
@@ -58,11 +64,11 @@ export function Lecture({
         <span className="flex-1 lg:hidden" />
         <BoutonIcone icone="archives" libelle={c.archive ? "Remettre dans la boîte" : "Archiver"} onClick={actions.onArchiver} />
         <BoutonIcone icone="indesirables" libelle={c.indesirable ? "Ce n’est pas un spam" : "Signaler comme spam"} onClick={actions.onIndesirable} />
-        <BoutonIcone icone="corbeille" libelle={c.supprime ? "Retirer de la corbeille" : "Supprimer"} onClick={actions.onSupprimer} />
+        {capacites.corbeille && <BoutonIcone icone="corbeille" libelle={c.supprime ? "Retirer de la corbeille" : "Supprimer"} onClick={actions.onSupprimer} />}
         <span aria-hidden="true" className="mx-1.5 hidden h-6 w-px bg-bordure lg:block" />
         <BoutonIcone icone="courrier" libelle="Marquer comme non lu" onClick={actions.onNonLu} />
         <BoutonIcone icone="deplacer" libelle="Déplacer vers…" onClick={() => actions.onDeplacer()} />
-        <button
+        {capacites.suivis && <button
           type="button"
           aria-pressed={c.suivi}
           aria-label={c.suivi ? "Ne plus suivre" : "Suivre cette conversation"}
@@ -71,11 +77,18 @@ export function Lecture({
           className={`flex size-11 shrink-0 items-center justify-center rounded-xl hover:bg-releve ${c.suivi ? "text-etoile" : "text-texte"}`}
         >
           <Icone nom="etoile" plein={c.suivi ? "currentColor" : undefined} />
-        </button>
+        </button>}
       </div>
 
       <div className="sans-barre min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <article className="flex max-w-[860px] flex-col gap-4 px-[18px] pt-[18px] pb-7 lg:px-8 lg:pt-6 lg:pb-8">
+          {imagesParServeur && (c.imagesDistantesBloquees ?? 0) > 0 && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-releve px-3 py-1.5 text-[13px] text-attenue">
+              <Icone nom="image" taille={16} />
+              <span className="min-w-0 flex-1">{c.imagesDistantesBloquees === 1 ? "1 image distante bloquée" : `${c.imagesDistantesBloquees} images distantes bloquées`}</span>
+              <button type="button" onClick={onChargerImages} className="min-h-11 rounded-lg px-2 font-bold text-encre-accent underline">Afficher les images</button>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
             <h2 className="m-0 text-[21px] leading-[1.3] font-bold text-balance lg:text-[23px] lg:leading-[1.25]">{c.objet}</h2>
             {libelles.map((l) => (
@@ -135,7 +148,7 @@ export function Lecture({
             </p>
           )}
 
-          {ia && (
+          {capacites.ia && ia && (
             <div>
               <button
                 type="button"
@@ -198,12 +211,14 @@ export function Lecture({
                   large={large}
                   onGlisserPiece={actions.onGlisserPiece}
                   onGlisserFin={actions.onGlisserFin}
+                  imagesParServeur={imagesParServeur}
+                  imagesAutorisees={c.imagesDistantesAutorisees === true}
                 />
               ),
             )}
           </ol>
 
-          {peutRepondre && ia && ia.suggestions.length > 0 && (
+          {capacites.ia && peutRepondre && ia && ia.suggestions.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2 text-[13px] font-bold text-attenue">
                 <span className="text-encre-accent">
@@ -286,6 +301,8 @@ function MessageVue({
   large,
   onGlisserPiece,
   onGlisserFin,
+  imagesParServeur = false,
+  imagesAutorisees = false,
 }: {
   m: Message;
   ouvert: boolean;
@@ -297,6 +314,8 @@ function MessageVue({
   large: boolean;
   onGlisserPiece: (e: React.DragEvent, p: PieceJointe) => void;
   onGlisserFin: () => void;
+  imagesParServeur?: boolean;
+  imagesAutorisees?: boolean;
 }) {
   const quand = dateLongue(m.date, fuseau);
   const vers = `À ${m.a.map((x) => x.nom).join(", ") || "moi"}`;
@@ -354,7 +373,7 @@ function MessageVue({
         {peutRepondre && <BoutonIcone icone="repondre" libelle={`Répondre à ${m.de.nom}`} onClick={onRepondre} />}
       </div>
       <div className="mt-3 lg:mt-3.5 lg:pl-[54px]">
-        <CorpsMessage texte={m.texte} html={m.html} sujet={sujet} />
+        <CorpsMessage texte={m.texte} html={m.html} sujet={sujet} imagesParServeur={imagesParServeur} imagesAutorisees={imagesAutorisees} />
       </div>
       {m.piecesJointes.length > 0 && (
         <ul role="list" className="m-0 mt-3.5 flex list-none flex-col gap-2 p-0 lg:mt-4 lg:flex-row lg:flex-wrap lg:gap-2.5 lg:pl-[54px]">

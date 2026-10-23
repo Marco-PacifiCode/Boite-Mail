@@ -12,7 +12,7 @@ import { Icone } from "../Icone";
  *   chargées qu'à la demande (« Afficher les images ») : un pixel espion ne part donc pas tout seul.
  *   `allow-same-origin` ne sert qu'à mesurer la hauteur ; sans scripts, il ne donne rien au message.
  */
-export function CorpsMessage({ texte, html, sujet }: { texte: string; html: string | null; sujet: string }) {
+export function CorpsMessage({ texte, html, sujet, imagesAutorisees = false, imagesParServeur = false }: { texte: string; html: string | null; sujet: string; imagesAutorisees?: boolean; imagesParServeur?: boolean }) {
   const [images, setImages] = useState(false);
   const [hauteur, setHauteur] = useState(120);
   const observateur = useRef<ResizeObserver | null>(null);
@@ -41,7 +41,7 @@ export function CorpsMessage({ texte, html, sujet }: { texte: string; html: stri
   const csp = [
     "default-src 'none'",
     "style-src 'unsafe-inline'",
-    `img-src data: cid:${images ? " https: http:" : ""}`,
+    `img-src 'self' data: cid:${imagesParServeur ? (imagesAutorisees ? " https:" : "") : images ? " https: http:" : ""}`,
     "font-src data:",
     "form-action 'none'",
   ].join("; ");
@@ -56,7 +56,7 @@ export function CorpsMessage({ texte, html, sujet }: { texte: string; html: stri
 
   return (
     <div className="flex flex-col gap-2">
-      {distantes && !images && (
+      {distantes && !images && !imagesParServeur && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-releve px-3 py-1.5 text-[13px] text-attenue">
           <Icone nom="image" taille={16} />
           <span className="min-w-0 flex-1">Images distantes masquées pour protéger votre vie privée.</span>

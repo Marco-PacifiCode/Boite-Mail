@@ -14,6 +14,7 @@ export default async function PageParametres() {
   const utilisateur = await lireSession(commerce);
   if (!utilisateur) redirect("/connexion");
   const api = mailApi(commerce, utilisateur);
+  if (!api.capacites.parametres) redirect("/");
   const [parametres, etat] = await Promise.all([api.lireParametres(), api.listerBoites()]);
   return (
     <FormulaireParametres

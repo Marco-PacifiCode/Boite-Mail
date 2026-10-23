@@ -1,5 +1,6 @@
 "use server";
 
+import { ErreurAffichable, type ErreurAction } from "@/lib/erreurs";
 import { redirect } from "next/navigation";
 import { fermerSession, lireSession, modeConnexion, ouvrirSession, utilisateurDemo, verifierIdentifiants } from "@/lib/auth";
 import { commerceCourant } from "@/lib/commerces";
@@ -13,7 +14,6 @@ import type {
   PageConversations,
   Parametres,
   PieceAEnvoyer,
-  ResumeConversation,
   ResumeIA,
   Conversation,
   Vue,
@@ -25,11 +25,23 @@ import type {
  * l'utilisateur par la session, et refuse si l'un des deux manque.
  */
 
+function garder<A extends unknown[], T>(fn: (...a: A) => Promise<T>) {
+  return async (...a: A): Promise<T | ErreurAction> => {
+    try {
+      return await fn(...a);
+    } catch (e) {
+      if (e instanceof ErreurAffichable) return { erreurAction: e.message };
+      console.error("action.echec", { nom: fn.name });
+      return { erreurAction: "Une erreur est survenue. Réessayez." };
+    }
+  };
+}
+
 async function contexte() {
   const commerce = await commerceCourant();
-  if (!commerce) throw new Error("Boîte introuvable");
+  if (!commerce) throw new ErreurAffichable("Boîte introuvable");
   const utilisateur = await lireSession(commerce);
-  if (!utilisateur) throw new Error("Session expirée : reconnectez-vous.");
+  if (!utilisateur) throw new ErreurAffichable("Session expirée : reconnectez-vous.");
   return { commerce, utilisateur, api: mailApi(commerce, utilisateur) };
 }
 
@@ -41,7 +53,7 @@ function vueSure(v: unknown): Vue {
   if (o.type === "boite" && typeof o.id === "string") return { type: "boite", id: o.id };
   if (o.type === "libelle" && typeof o.id === "string") return { type: "libelle", id: o.id };
   if (o.type === "dossier" && DOSSIERS.includes(o.id as Dossier)) return { type: "dossier", id: o.id as Dossier };
-  throw new Error("Vue inconnue");
+  throw new ErreurAffichable("Vue inconnue");
 }
 
 function modificationSure(m: unknown): ModificationConversation {
@@ -91,47 +103,61 @@ export async function seDeconnecter(): Promise<void> {
 
 // --- Boîtes et conversations ---
 
-export async function chargerEtat(): Promise<EtatBoites> {
-  const { api } = await contexte();
-  return api.listerBoites();
+export async function chargerEtat(): Promise<EtatBoites | ErreurAction> {
+  return garder(async function chargerEtat() {
+    const { api } = await contexte();
+    return api.listerBoites();
+  })();
 }
 
-export async function chargerListe(filtre: FiltreListe): Promise<PageConversations> {
-  const { api } = await contexte();
-  return api.listerConversations({
-    vue: vueSure(filtre?.vue),
-    q: typeof filtre?.q === "string" ? filtre.q.slice(0, 200) : undefined,
-    curseur: typeof filtre?.curseur === "string" ? filtre.curseur : undefined,
-  });
+export async function chargerListe(filtre: FiltreListe): Promise<PageConversations | ErreurAction> {
+  return garder(async function chargerListe() {
+    const { api } = await contexte();
+    return api.listerConversations({
+      vue: vueSure(filtre?.vue),
+      q: typeof filtre?.q === "string" ? filtre.q.slice(0, 200) : undefined,
+      curseur: typeof filtre?.curseur === "string" ? filtre.curseur : undefined,
+    });
+  })();
 }
 
 /** Ouvre une conversation : la lit, la marque comme lue, et rend le résumé IA. */
 export async function ouvrirConversation(
   id: string,
-): Promise<{ conversation: Conversation; ia: ResumeIA | null; etat: EtatBoites }> {
-  const { api } = await contexte();
-  const lue = await api.lireConversation(String(id));
-  if (!lue.lu) await api.modifierConversation(lue.id, { lu: true });
-  const params = await api.lireParametres();
-  const [conversation, ia, etat] = await Promise.all([
-    api.lireConversation(lue.id),
-    params.ia.resumes ? api.resumerConversation(lue.id) : Promise.resolve(null),
-    api.listerBoites(),
-  ]);
-  return { conversation, ia, etat };
+): Promise<{ conversation: Conversation; ia: ResumeIA | null; etat: EtatBoites } | ErreurAction> {
+  return garder(async function ouvrirConversation() {
+    const { api } = await contexte();
+    const lue = await api.lireConversation(String(id));
+    if (!lue.lu) await api.modifierConversation(lue.id, { lu: true });
+    const params = await api.lireParametres();
+    const [conversation, ia, etat] = await Promise.all([
+      api.lireConversation(lue.id),
+      params.ia.resumes ? api.resumerConversation(lue.id) : Promise.resolve(null),
+      api.listerBoites(),
+    ]);
+    return { conversation, ia, etat };
+  })();
+}
+
+export async function chargerConversationAvecImages(id: string): Promise<Conversation | ErreurAction> {
+  return garder(async function chargerConversationAvecImages() {
+    const { api } = await contexte();
+    return api.lireConversation(String(id), { imagesDistantes: true });
+  })();
 }
 
 export async function modifierConversations(
   ids: string[],
   modification: ModificationConversation,
-): Promise<{ resumes: ResumeConversation[]; etat: EtatBoites }> {
-  const { api } = await contexte();
-  const mod = modificationSure(modification);
-  const resumes: ResumeConversation[] = [];
-  for (const id of (Array.isArray(ids) ? ids : []).slice(0, 200)) {
-    resumes.push(await api.modifierConversation(String(id), mod));
-  }
-  return { resumes, etat: await api.listerBoites() };
+): Promise<{ etat: EtatBoites } | ErreurAction> {
+  return garder(async function modifierConversations() {
+    const { api } = await contexte();
+    const mod = modificationSure(modification);
+    for (const id of (Array.isArray(ids) ? ids : []).slice(0, 200)) {
+      await api.modifierConversation(String(id), mod);
+    }
+    return { etat: await api.listerBoites() };
+  })();
 }
 
 async function piecesDuFormulaire(fd: FormData): Promise<PieceAEnvoyer[]> {
@@ -147,52 +173,60 @@ async function piecesDuFormulaire(fd: FormData): Promise<PieceAEnvoyer[]> {
 }
 
 /** Envoie une réponse ou un nouveau message (FormData : la rédaction peut joindre des fichiers). */
-export async function envoyer(fd: FormData): Promise<{ conversation: Conversation; etat: EtatBoites }> {
-  const { api } = await contexte();
-  const texte = String(fd.get("texte") ?? "");
-  const boiteId = String(fd.get("boiteId") ?? "") || undefined;
-  const conversationId = String(fd.get("conversationId") ?? "");
-  const piecesJointes = await piecesDuFormulaire(fd);
-  let conversation: Conversation;
-  if (conversationId) {
-    conversation = await api.repondre(conversationId, { boiteId, texte, piecesJointes });
-  } else {
-    const a = String(fd.get("a") ?? "")
-      .split(/[,;]+/)
-      .map((x) => x.trim())
-      .filter(Boolean);
-    if (!a.length) throw new Error("Indiquez au moins un destinataire.");
-    conversation = await api.ecrire({
-      boiteId: boiteId ?? "",
-      a,
-      objet: String(fd.get("objet") ?? "").slice(0, 300),
-      texte,
-      piecesJointes,
-    });
-  }
-  return { conversation, etat: await api.listerBoites() };
+export async function envoyer(fd: FormData): Promise<{ conversation: Conversation; etat: EtatBoites } | ErreurAction> {
+  return garder(async function envoyer() {
+    const { api } = await contexte();
+    const texte = String(fd.get("texte") ?? "");
+    const boiteId = String(fd.get("boiteId") ?? "") || undefined;
+    const conversationId = String(fd.get("conversationId") ?? "");
+    const piecesJointes = await piecesDuFormulaire(fd);
+    let conversation: Conversation;
+    if (conversationId) {
+      conversation = await api.repondre(conversationId, { boiteId, texte, piecesJointes });
+    } else {
+      const a = String(fd.get("a") ?? "")
+        .split(/[,;]+/)
+        .map((x) => x.trim())
+        .filter(Boolean);
+      if (!a.length) throw new ErreurAffichable("Indiquez au moins un destinataire.");
+      conversation = await api.ecrire({
+        boiteId: boiteId ?? "",
+        a,
+        objet: String(fd.get("objet") ?? "").slice(0, 300),
+        texte,
+        piecesJointes,
+      });
+    }
+    return { conversation, etat: await api.listerBoites() };
+  })();
 }
 
 // --- IA (démo aujourd'hui, core_ai demain) ---
 
-export async function iaRediger(entree: { conversationId?: string; consigne: string; boiteId?: string }): Promise<string> {
-  const { api } = await contexte();
-  return api.redigerBrouillon({
-    conversationId: typeof entree?.conversationId === "string" ? entree.conversationId : undefined,
-    consigne: String(entree?.consigne ?? "").slice(0, 1000),
-    boiteId: typeof entree?.boiteId === "string" ? entree.boiteId : undefined,
-  });
+export async function iaRediger(entree: { conversationId?: string; consigne: string; boiteId?: string }): Promise<string | ErreurAction> {
+  return garder(async function iaRediger() {
+    const { api } = await contexte();
+    return api.redigerBrouillon({
+      conversationId: typeof entree?.conversationId === "string" ? entree.conversationId : undefined,
+      consigne: String(entree?.consigne ?? "").slice(0, 1000),
+      boiteId: typeof entree?.boiteId === "string" ? entree.boiteId : undefined,
+    });
+  })();
 }
 
-export async function iaReecrire(texte: string, mode: ModeReecriture): Promise<string> {
-  const { api } = await contexte();
-  const m: ModeReecriture = (["court", "formel", "chaleureux", "corriger"] as const).includes(mode) ? mode : "corriger";
-  return api.reecrireTexte(String(texte ?? "").slice(0, 20000), m);
+export async function iaReecrire(texte: string, mode: ModeReecriture): Promise<string | ErreurAction> {
+  return garder(async function iaReecrire() {
+    const { api } = await contexte();
+    const m: ModeReecriture = (["court", "formel", "chaleureux", "corriger"] as const).includes(mode) ? mode : "corriger";
+    return api.reecrireTexte(String(texte ?? "").slice(0, 20000), m);
+  })();
 }
 
 // --- Paramètres ---
 
-export async function enregistrerParametres(p: Parametres): Promise<Parametres> {
-  const { api } = await contexte();
-  return api.enregistrerParametres(p);
+export async function enregistrerParametres(p: Parametres): Promise<Parametres | ErreurAction> {
+  return garder(async function enregistrerParametres() {
+    const { api } = await contexte();
+    return api.enregistrerParametres(p);
+  })();
 }

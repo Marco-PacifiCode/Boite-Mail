@@ -26,6 +26,7 @@ type Props = {
   onCocher: () => void;
   onAppuiLong: () => void;
   onSuivi: () => void;
+  afficherSuivi?: boolean;
   onDeplacer: () => void;
   onBalayage: (a: Balayage) => void;
   onGlisserDebut: (e: React.DragEvent) => void;
@@ -128,7 +129,7 @@ export function Ligne(p: Props) {
   const personnes =
     c.nbMessages === 1 && !c.aRecu
       ? `À : ${c.correspondant?.nom ?? "destinataire"}`
-      : c.participants.join(", ") || c.correspondant?.nom || "";
+      : c.participants.join(", ") || c.correspondant?.nom || c.objet || "(sans objet)";
   const nomAvatar = c.correspondant?.nom ?? personnes;
   const a = action(dx);
   const versDroite = dx > 0;
@@ -253,7 +254,7 @@ export function Ligne(p: Props) {
         </button>
         {!p.modeSelection && (
           <div className="flex shrink-0 flex-col items-center pt-1.5 pr-0.5 max-lg:pt-7">
-            <button
+            {p.afficherSuivi !== false && <button
               type="button"
               aria-pressed={c.suivi}
               aria-label={c.suivi ? "Ne plus suivre" : "Suivre cette conversation"}
@@ -262,7 +263,7 @@ export function Ligne(p: Props) {
               className={`flex size-11 items-center justify-center rounded-xl ${c.suivi ? "text-etoile" : "text-attenue"}`}
             >
               <Icone nom="etoile" taille={17} plein={c.suivi ? "currentColor" : undefined} />
-            </button>
+            </button>}
             <button
               type="button"
               aria-label={`Déplacer vers… (${c.objet})`}

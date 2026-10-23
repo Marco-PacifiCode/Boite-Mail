@@ -19,15 +19,20 @@ export default async function Accueil() {
   const vue: Vue = { type: "boite", id: accueil.id };
   const [liste, parametres] = await Promise.all([api.listerConversations({ vue }), api.lireParametres()]);
   const mode = lireMode((await cookies()).get(COOKIE_AFFICHAGE)?.value);
+  const commerceClient = commercePourClient(commerce);
+  const commerceAvecBoitesApi = api.capacites.imagesParServeur
+    ? { ...commerceClient, boites: etat.boites.map(({ id, adresse, libelle }) => ({ id, adresse, libelle })) }
+    : commerceClient;
 
   return (
     <MailApp
-      commerce={commercePourClient(commerce)}
+      commerce={commerceAvecBoitesApi}
       utilisateur={{ nom: utilisateur.nom, email: utilisateur.email }}
       etatInitial={etat}
       listeInitiale={liste.conversations}
       vueInitiale={vue}
       parametres={parametres}
+      capacites={api.capacites}
       modeInitial={mode}
     />
   );
