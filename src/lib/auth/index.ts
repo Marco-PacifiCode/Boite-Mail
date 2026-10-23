@@ -42,7 +42,7 @@ function nomDepuisAdresse(adresse: string): string {
 
 type ReponseLogin = {
   user?: { id?: unknown; email?: unknown; role?: unknown; tenantId?: unknown };
-  session?: { jwt?: unknown; maxAge?: unknown };
+  session?: { jwt?: unknown; maxAge?: unknown; cookieName?: unknown };
 };
 
 async function verifierChezCoreAuth(commerce: Commerce, adresse: string, motDePasse: string): Promise<Utilisateur | null> {
@@ -72,6 +72,7 @@ async function verifierChezCoreAuth(commerce: Commerce, adresse: string, motDePa
   const u = corps?.user;
   const jwt = corps?.session?.jwt;
   const maxAge = corps?.session?.maxAge;
+  const cookieName = corps?.session?.cookieName;
   if (!u || typeof u.id !== "string" || u.tenantId !== commerce.tenantId || typeof jwt !== "string" || !jwt) return null;
   const email = typeof u.email === "string" ? u.email.toLowerCase() : adresse;
   return {
@@ -80,6 +81,7 @@ async function verifierChezCoreAuth(commerce: Commerce, adresse: string, motDePa
     tenantId: commerce.tenantId,
     boites: null,
     jeton: jwt,
+    jetonCookie: cookieName === "authjs.session-token" || cookieName === "__Secure-authjs.session-token" ? cookieName : undefined,
     coreUserId: u.id,
     role: typeof u.role === "string" ? u.role : undefined,
     jetonExpire: typeof maxAge === "number" && maxAge > 0 ? Date.now() + maxAge * 1000 : undefined,

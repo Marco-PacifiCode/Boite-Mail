@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
-import { chargerListe, modifierConversations, ouvrirConversation } from "@/app/actions";
+import { chargerConversationAvecImages, chargerListe, modifierConversations, ouvrirConversation } from "@/app/actions";
 import type {
   Conversation,
+  Capacites,
   EtatBoites,
   ModificationConversation,
   Parametres,
@@ -65,6 +66,7 @@ export function MailApp({
   listeInitiale,
   vueInitiale,
   parametres,
+  capacites,
   modeInitial,
 }: {
   commerce: CommerceClient;
@@ -73,6 +75,7 @@ export function MailApp({
   listeInitiale: ResumeConversation[];
   vueInitiale: Vue;
   parametres: Parametres;
+  capacites: Capacites;
   modeInitial: Mode;
 }) {
   const large = useEcranLarge();
@@ -174,6 +177,11 @@ export function MailApp({
     }
   };
 
+  const chargerImages = async (id: string) => {
+    try { const conversation = { ...(await chargerConversationAvecImages(id)), imagesDistantesAutorisees: true }; setOuverte(v => v?.conversation.id === id ? { ...v, conversation } : v); }
+    catch (e) { erreur(e); }
+  };
+
   const trouver = (id: string): ResumeConversation | undefined =>
     liste.find((c) => c.id === id) ?? (ouverte?.conversation.id === id ? ouverte.conversation : undefined);
 
@@ -238,6 +246,7 @@ export function MailApp({
     );
   };
   const supprimer = (ids: string[]) => {
+    if (!capacites.corbeille) return;
     const deja = ids.every((id) => trouver(id)?.supprime);
     modifier(
       tous(ids, { supprime: !deja }),
@@ -263,6 +272,7 @@ export function MailApp({
       ids.length === 1 ? (valeur ? "Marquée comme lue" : "Marquée comme non lue") : `${ids.length} conversations marquées comme ${valeur ? "lues" : "non lues"}`,
     );
   const basculerSuivi = (id: string) => {
+    if (!capacites.suivis) return;
     const c = trouver(id);
     if (c) modifier([{ id, mod: { suivi: !c.suivi } }]);
   };
@@ -278,7 +288,7 @@ export function MailApp({
     if (d.type === "boite") {
       const corrige = ids.some((id) => trouver(id)?.verdict);
       modifier(
-        tous(ids, { boiteId: d.id, archive: false, supprime: false, indesirable: false }),
+        tous(ids, { boiteId: d.id, archive: false, ...(capacites.corbeille ? { supprime: false } : {}), indesirable: false }),
         `${pluriel(ids.length, "Rangée", "conversations rangées")} dans ${nomBoite(d.id)}.${corrige ? " Jev apprendra de votre choix." : ""}`,
       );
     } else if (d.type === "libelle") {
@@ -290,7 +300,7 @@ export function MailApp({
         );
       } else ajouterLibelle(ids, d.id);
     } else if (d.id === "reception") {
-      modifier(tous(ids, { archive: false, supprime: false, indesirable: false }), pluriel(ids.length, "Conversation remise dans sa boîte", "conversations remises dans leur boîte"));
+      modifier(tous(ids, { archive: false, ...(capacites.corbeille ? { supprime: false } : {}), indesirable: false }), pluriel(ids.length, "Conversation remise dans sa boîte", "conversations remises dans leur boîte"));
     } else if (d.id === "suivis") {
       modifier(tous(ids, { suivi: true }), pluriel(ids.length, "Conversation ajoutée aux suivis", "conversations ajoutées aux suivis"));
     } else if (d.id === "archives") {
@@ -342,7 +352,7 @@ export function MailApp({
       boiteId: boiteEnvoi(c.boiteId),
       objet: `Tr : ${c.objet}`,
       corps: `\n\n— Message transféré —\nDe : ${dernier.de.nom} <${dernier.de.adresse}>\nObjet : ${c.objet}\n\n${dernier.texte}`,
-      references: dernier.piecesJointes.map((p) => ({ id: p.id, nom: p.nom, taille: p.taille })),
+      references: capacites.piecesJointesSortantes ? dernier.piecesJointes.map((p) => ({ id: p.id, nom: p.nom, taille: p.taille })) : [],
     });
   };
 
@@ -385,7 +395,7 @@ export function MailApp({
 
   const depotEcrire: Depot = {
     cle: "ecrire",
-    accepte: (c, fichiers) => fichiers || !!c,
+    accepte: (c, fichiers) => capacites.piecesJointesSortantes && (fichiers || !!c),
     surDepot: (c, fichiers) => {
       if (c?.type === "conversation") transfererParId(c.ids[0]);
       else if (c?.type === "piece") nouvelle({ references: [{ id: c.id, nom: c.nom, taille: c.taille }] });
@@ -441,7 +451,7 @@ export function MailApp({
       : "Rien ici pour le moment.";
 
   const gaucheCourt: Balayage = enArriere ? "remettre" : "archiver";
-  const gaucheLong: Balayage = vue.type === "dossier" && vue.id === "corbeille" ? "remettre" : "supprimer";
+  const gaucheLong: Balayage = !capacites.corbeille || (vue.type === "dossier" && vue.id === "corbeille") ? "remettre" : "supprimer";
   const balayer = (c: ResumeConversation, a: Balayage) => {
     if (a === "lu") marquerLu([c.id], !c.lu);
     else if (a === "archiver") archiver([c.id]);
@@ -513,6 +523,7 @@ export function MailApp({
         </div>
         <Navigation
           commerce={commerce}
+          capacites={capacites}
           utilisateur={utilisateur}
           etat={etat}
           vue={vue}
@@ -541,7 +552,7 @@ export function MailApp({
             </span>
             <BoutonIcone icone="courrier" libelle={tousLus ? "Marquer comme non lu" : "Marquer comme lu"} onClick={() => marquerLu(coches, !tousLus)} />
             <BoutonIcone icone={enArriere ? "remettre" : "archives"} libelle={enArriere ? "Remettre dans sa boîte" : "Archiver"} onClick={() => (enArriere ? deplacerVers(coches, { type: "dossier", id: "reception" }) : archiver(coches))} />
-            <BoutonIcone icone="corbeille" libelle="Supprimer" onClick={() => supprimer(coches)} />
+            {capacites.corbeille && <BoutonIcone icone="corbeille" libelle="Supprimer" onClick={() => supprimer(coches)} />}
             <BoutonIcone icone="deplacer" libelle="Déplacer vers…" onClick={() => setMenu({ ids: coches })} />
           </div>
         ) : (
@@ -550,9 +561,9 @@ export function MailApp({
             <div className="min-w-0 flex-1">
               <EnTeteCommerce commerce={commerce} taille={34} />
             </div>
-            <Link href="/parametres" aria-label={`Paramètres de ${utilisateur.nom}`} className="flex size-11 shrink-0 items-center justify-center rounded-full">
+            {capacites.parametres && <Link href="/parametres" aria-label={`Paramètres de ${utilisateur.nom}`} className="flex size-11 shrink-0 items-center justify-center rounded-full">
               <Avatar nom={utilisateur.nom} taille={34} />
-            </Link>
+            </Link>}
           </div>
         )}
 
@@ -629,6 +640,7 @@ export function MailApp({
                     onCocher={() => setCoches((s) => (s.includes(c.id) ? s.filter((x) => x !== c.id) : [...s, c.id]))}
                     onAppuiLong={() => setCoches((s) => (s.includes(c.id) ? s : [...s, c.id]))}
                     onSuivi={() => basculerSuivi(c.id)}
+                    afficherSuivi={capacites.suivis}
                     onDeplacer={() => setMenu({ ids: coches.includes(c.id) ? coches : [c.id] })}
                     onBalayage={(a) => balayer(c, a)}
                     onGlisserDebut={(e) => debutGlisseConversation(e, c)}
@@ -641,7 +653,7 @@ export function MailApp({
           <p className="m-0 px-7 pt-[18px] pb-28 text-center text-[13px] leading-normal text-attenue lg:hidden">
             {coches.length > 0
               ? "Touchez d’autres conversations pour les ajouter à la sélection."
-              : "Glissez une conversation vers la gauche pour l’archiver, plus loin pour la supprimer, vers la droite pour la marquer comme lue. Appui long pour en choisir plusieurs."}
+              : `Glissez une conversation vers la gauche pour l’archiver${capacites.corbeille ? ", plus loin pour la supprimer" : ""}, vers la droite pour la marquer comme lue. Appui long pour en choisir plusieurs.`}
           </p>
         </div>
         <p className="m-0 hidden border-t border-bordure px-[18px] pt-2.5 pb-3.5 text-[12.5px] leading-[1.45] text-attenue lg:block">
@@ -677,6 +689,9 @@ export function MailApp({
             commerce={commerce}
             large={large}
             actions={actionsLecture}
+            imagesParServeur={capacites.imagesParServeur}
+            onChargerImages={() => chargerImages(conversationAffichee.conversation.id)}
+            capacites={capacites}
           />
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-20 text-center text-attenue">
@@ -703,6 +718,7 @@ export function MailApp({
           <div className="flex min-h-0 flex-1 flex-col px-2.5 pb-[max(16px,env(safe-area-inset-bottom))]">
             <Navigation
               commerce={commerce}
+              capacites={capacites}
               utilisateur={utilisateur}
               etat={etat}
               vue={vue}
@@ -733,6 +749,7 @@ export function MailApp({
           }}
           boites={etat.boites}
           parametres={parametres}
+          capacites={capacites}
           glisse={glisse}
           setGlisse={setGlisse}
         />
@@ -745,6 +762,7 @@ export function MailApp({
           seulement={menu.seulement}
           libellesActifs={libellesCommuns}
           boiteActuelle={menu.ids.length === 1 ? (trouver(menu.ids[0])?.boiteId ?? null) : null}
+          capacites={capacites}
           onChoisir={(d) => deplacerVers(menu.ids, d)}
           onFermer={() => setMenu(null)}
         />

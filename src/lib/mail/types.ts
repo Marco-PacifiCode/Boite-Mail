@@ -126,7 +126,11 @@ export type ResumeConversation = {
 
 export type Conversation = ResumeConversation & {
   messages: Message[];
+  imagesDistantesBloquees?: number;
+  imagesDistantesAutorisees?: boolean;
 };
+
+export type Capacites = { suivis: boolean; envoyes: boolean; brouillons: boolean; corbeille: boolean; compteursDossiers: boolean; piecesJointesSortantes: boolean; ia: boolean; parametres: boolean; imagesParServeur: boolean };
 
 /** Vue demandée à la liste (contrat : `GET /api/mail/threads?mailbox=&label=&folder=&q=&cursor=`). */
 export type Dossier = "suivis" | "envoyes" | "brouillons" | "archives" | "indesirables" | "corbeille";
@@ -227,13 +231,14 @@ export type Parametres = {
  * contre ses droits (`MailboxAccess` côté core_comms).
  */
 export interface MailApi {
+  readonly capacites: Capacites;
   // --- Boîtes et conversations (core_comms) ---
   listerBoites(): Promise<EtatBoites>;
   listerConversations(filtre: FiltreListe): Promise<PageConversations>;
-  lireConversation(id: string): Promise<Conversation>;
+  lireConversation(id: string, options?: { imagesDistantes?: boolean }): Promise<Conversation>;
   repondre(conversationId: string, reponse: Reponse): Promise<Conversation>;
   ecrire(message: NouveauMessage): Promise<Conversation>;
-  modifierConversation(id: string, modification: ModificationConversation): Promise<ResumeConversation>;
+  modifierConversation(id: string, modification: ModificationConversation): Promise<void>;
   telechargerPieceJointe(id: string): Promise<ContenuPieceJointe>;
 
   // --- IA (core_ai, plus tard) ---
@@ -255,6 +260,7 @@ export type Utilisateur = {
   boites: string[] | null;
   /** jeton core_auth (jws-e2) à transmettre à core_comms ; absent en démo */
   jeton?: string;
+  jetonCookie?: string;
   /** identifiant et rôle de la personne chez core_auth ; absents en démo */
   coreUserId?: string;
   role?: string;

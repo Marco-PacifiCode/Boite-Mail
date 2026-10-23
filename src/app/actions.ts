@@ -13,7 +13,6 @@ import type {
   PageConversations,
   Parametres,
   PieceAEnvoyer,
-  ResumeConversation,
   ResumeIA,
   Conversation,
   Vue,
@@ -121,17 +120,21 @@ export async function ouvrirConversation(
   return { conversation, ia, etat };
 }
 
+export async function chargerConversationAvecImages(id: string): Promise<Conversation> {
+  const { api } = await contexte();
+  return api.lireConversation(String(id), { imagesDistantes: true });
+}
+
 export async function modifierConversations(
   ids: string[],
   modification: ModificationConversation,
-): Promise<{ resumes: ResumeConversation[]; etat: EtatBoites }> {
+): Promise<{ etat: EtatBoites }> {
   const { api } = await contexte();
   const mod = modificationSure(modification);
-  const resumes: ResumeConversation[] = [];
   for (const id of (Array.isArray(ids) ? ids : []).slice(0, 200)) {
-    resumes.push(await api.modifierConversation(String(id), mod));
+    await api.modifierConversation(String(id), mod);
   }
-  return { resumes, etat: await api.listerBoites() };
+  return { etat: await api.listerBoites() };
 }
 
 async function piecesDuFormulaire(fd: FormData): Promise<PieceAEnvoyer[]> {

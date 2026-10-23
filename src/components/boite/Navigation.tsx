@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { EtatBoites, Vue } from "@/lib/mail/types";
+import type { Capacites, EtatBoites, Vue } from "@/lib/mail/types";
 import { Icone, type NomIcone } from "../Icone";
 import {
   Avatar,
@@ -30,6 +30,7 @@ type Props = {
   commerce: CommerceClient;
   utilisateur: UtilisateurClient;
   etat: EtatBoites;
+  capacites: Capacites;
   vue: Vue;
   onVue: (v: Vue) => void;
   /** cible de dépôt d'une entrée de navigation (`null` = n'accepte rien) */
@@ -74,7 +75,7 @@ export function Navigation(p: Props) {
                 vue={{ type: "aTrier" }}
                 icone="aTrier"
                 nom="À trier"
-                compte={p.etat.compteurs.aTrier}
+                compte={p.capacites.compteursDossiers ? p.etat.compteurs.aTrier : undefined}
                 compteLibelle="à trier"
               />
             )}
@@ -84,14 +85,14 @@ export function Navigation(p: Props) {
         <div>
           {plusieurs && <h2 className={titre}>Dossiers</h2>}
           <ul role="list" className="m-0 flex list-none flex-col gap-0.5 p-0">
-            {DOSSIERS.map((d) => (
+            {DOSSIERS.filter(d => (d.id !== "suivis" || p.capacites.suivis) && (d.id !== "envoyes" || p.capacites.envoyes) && (d.id !== "brouillons" || p.capacites.brouillons) && (d.id !== "corbeille" || p.capacites.corbeille)).map((d) => (
               <EntreeNav
                 {...commun}
                 key={d.id}
                 vue={{ type: "dossier", id: d.id }}
                 icone={d.icone}
                 nom={d.nom}
-                compte={
+                  compte={p.capacites.compteursDossiers ? (
                   d.id === "indesirables"
                     ? p.etat.compteurs.indesirables
                     : d.id === "corbeille"
@@ -99,7 +100,7 @@ export function Navigation(p: Props) {
                       : d.id === "brouillons"
                         ? p.etat.compteurs.brouillons
                         : 0
-                }
+                ) : undefined}
                 compteLibelle="conversations"
               />
             ))}
@@ -147,14 +148,14 @@ export function Navigation(p: Props) {
         >
           <Icone nom={p.sombre ? "soleil" : "lune"} />
         </button>
-        <Link
+        {p.capacites.parametres && <Link
           href="/parametres"
           aria-label="Paramètres"
           title="Paramètres"
           className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-releve text-texte"
         >
           <Icone nom="reglages" />
-        </Link>
+        </Link>}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Icone, type NomIcone } from "../Icone";
 import { PointLibelle, type CommerceClient } from "./commun";
+import type { Capacites } from "@/lib/mail/types";
 
 export type Destination =
   | { type: "boite"; id: string }
@@ -27,6 +28,7 @@ export function MenuDeplacer({
   seulement,
   libellesActifs,
   boiteActuelle,
+  capacites,
   onChoisir,
   onFermer,
 }: {
@@ -36,6 +38,7 @@ export function MenuDeplacer({
   /** libellés portés par toutes les conversations choisies */
   libellesActifs: string[];
   boiteActuelle: string | null;
+  capacites: Capacites;
   onChoisir: (d: Destination) => void;
   onFermer: () => void;
 }) {
@@ -46,6 +49,7 @@ export function MenuDeplacer({
     return () => d?.close();
   }, []);
 
+  const destinations = DOSSIERS.filter(d => (d.id !== "suivis" || capacites.suivis) && (d.id !== "corbeille" || capacites.corbeille));
   const titre =
     seulement === "boites"
       ? "Choisir la bonne boîte"
@@ -127,7 +131,7 @@ export function MenuDeplacer({
             <>
               <h3 className={rubrique}>Dossiers</h3>
               <ul role="list" className="m-0 list-none p-0">
-                {DOSSIERS.map((d) => (
+                {destinations.map((d) => (
                   <li key={d.id}>
                     <button type="button" className={ligne} onClick={() => onChoisir({ type: "dossier", id: d.id })}>
                       <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-releve">

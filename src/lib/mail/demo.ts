@@ -211,6 +211,7 @@ function plusChaleureux(t: string, fin: string): string {
 }
 
 export class DemoMailApi implements MailApi {
+  readonly capacites = { suivis: true, envoyes: true, brouillons: true, corbeille: true, compteursDossiers: true, piecesJointesSortantes: true, ia: true, parametres: true, imagesParServeur: false } as const;
   private readonly commerce: Commerce;
   private readonly utilisateur: Utilisateur;
 
@@ -302,7 +303,8 @@ export class DemoMailApi implements MailApi {
     return { conversations: liste.map((c) => this.resume(c)), curseurSuivant: null };
   }
 
-  async lireConversation(id: string): Promise<Conversation> {
+  async lireConversation(id: string, _options?: { imagesDistantes?: boolean }): Promise<Conversation> {
+    void _options;
     return this.complet(this.trouver(id));
   }
 
@@ -403,7 +405,7 @@ export class DemoMailApi implements MailApi {
     return this.complet(conv);
   }
 
-  async modifierConversation(id: string, mod: ModificationConversation): Promise<ResumeConversation> {
+  async modifierConversation(id: string, mod: ModificationConversation): Promise<void> {
     const c = this.trouver(id);
     if (mod.boiteId !== undefined && mod.boiteId !== c.boiteId) {
       if (!this.boitesPermises().has(mod.boiteId)) throw new Error("Boîte non autorisée");
@@ -430,7 +432,6 @@ export class DemoMailApi implements MailApi {
     if (mod.archive !== undefined) c.archive = mod.archive;
     if (mod.suivi !== undefined) c.suivi = mod.suivi;
     if (mod.supprime !== undefined) c.supprime = mod.supprime;
-    return this.resume(c);
   }
 
   async telechargerPieceJointe(id: string): Promise<ContenuPieceJointe> {
