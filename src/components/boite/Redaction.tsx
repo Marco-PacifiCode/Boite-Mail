@@ -1,5 +1,7 @@
 "use client";
 
+import { appel } from "@/lib/erreurs";
+
 import { useId, useState, useTransition } from "react";
 import { envoyer, iaRediger, iaReecrire } from "@/app/actions";
 import type { Boite, Capacites, Conversation, EtatBoites, ModeReecriture, Parametres } from "@/lib/mail/types";
@@ -81,7 +83,7 @@ export function Redaction({
   const rediger = () =>
     demarrer(async () => {
       try {
-        const texte = await iaRediger({ conversationId: r.conversationId, consigne: r.consigne, boiteId: r.boiteId });
+        const texte = await appel(iaRediger({ conversationId: r.conversationId, consigne: r.consigne, boiteId: r.boiteId }));
         onChange({
           corps: texte,
           note: r.consigne.trim()
@@ -96,7 +98,7 @@ export function Redaction({
   const reecrire = (o: (typeof OUTILS)[number]) =>
     demarrer(async () => {
       try {
-        onChange({ corps: await iaReecrire(r.corps, o.mode), note: o.note });
+        onChange({ corps: await appel(iaReecrire(r.corps, o.mode)), note: o.note });
       } catch (e) {
         setErreur(e instanceof Error ? e.message : "L’IA n’a pas pu réécrire le texte.");
       }
@@ -119,7 +121,7 @@ export function Redaction({
     r.references.forEach((x) => fd.append("references", x.id));
     demarrerEnvoi(async () => {
       try {
-        const { conversation, etat } = await envoyer(fd);
+        const { conversation, etat } = await appel(envoyer(fd));
         onEnvoye(conversation, etat, r.mode === "reponse" ? "Réponse envoyée" : `Message envoyé à ${r.a.replace(/\s*<.*>$/, "")}.`);
       } catch (e) {
         setErreur(e instanceof Error ? e.message : "L’envoi a échoué.");

@@ -1,5 +1,7 @@
 "use client";
 
+import { appel } from "@/lib/erreurs";
+
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import { chargerConversationAvecImages, chargerListe, modifierConversations, ouvrirConversation } from "@/app/actions";
@@ -137,7 +139,7 @@ export function MailApp({
     const n = ++demande.current;
     demarrer(async () => {
       try {
-        const page = await chargerListe({ vue: v, q });
+        const page = await appel(chargerListe({ vue: v, q }));
         if (n === demande.current) setListe(page.conversations);
       } catch (e) {
         erreur(e);
@@ -168,7 +170,7 @@ export function MailApp({
     setListe((l) => l.map((c) => (c.id === id ? { ...c, lu: true } : c)));
     const n = ++demandeOuverture.current;
     try {
-      const r = await ouvrirConversation(id);
+      const r = await appel(ouvrirConversation(id));
       if (n !== demandeOuverture.current) return;
       setOuverte({ conversation: r.conversation, ia: r.ia });
       setEtat(r.etat);
@@ -178,7 +180,7 @@ export function MailApp({
   };
 
   const chargerImages = async (id: string) => {
-    try { const conversation = { ...(await chargerConversationAvecImages(id)), imagesDistantesAutorisees: true }; setOuverte(v => v?.conversation.id === id ? { ...v, conversation } : v); }
+    try { const conversation = { ...(await appel(chargerConversationAvecImages(id))), imagesDistantesAutorisees: true }; setOuverte(v => v?.conversation.id === id ? { ...v, conversation } : v); }
     catch (e) { erreur(e); }
   };
 
@@ -201,7 +203,7 @@ export function MailApp({
     try {
       let dernier: EtatBoites | null = null;
       for (const ch of changements) {
-        const r = await modifierConversations([ch.id], ch.mod);
+        const r = await appel(modifierConversations([ch.id], ch.mod));
         dernier = r.etat;
       }
       if (dernier) setEtat(dernier);
@@ -213,7 +215,7 @@ export function MailApp({
                 fermerToast();
                 try {
                   let e: EtatBoites | null = null;
-                  for (const { ch, avant } of precedents) e = (await modifierConversations([ch.id], inverse(avant, ch.mod))).etat;
+                  for (const { ch, avant } of precedents) e = (await appel(modifierConversations([ch.id], inverse(avant, ch.mod)))).etat;
                   if (e) setEtat(e);
                   if (ouverte && precedents.some((p) => p.ch.id === ouverte.conversation.id)) {
                     const p = precedents.find((x) => x.ch.id === ouverte.conversation.id)!;
@@ -358,7 +360,7 @@ export function MailApp({
 
   const transfererParId = async (id: string) => {
     try {
-      const r = ouverte?.conversation.id === id ? ouverte : await ouvrirConversation(id);
+      const r = ouverte?.conversation.id === id ? ouverte : await appel(ouvrirConversation(id));
       transferer(r.conversation);
     } catch (e) {
       erreur(e);

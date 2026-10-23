@@ -1,3 +1,4 @@
+import { ErreurAffichable } from "@/lib/erreurs";
 import "server-only";
 
 import type { Commerce } from "@/lib/commerces";
@@ -187,19 +188,19 @@ export function creerCoreCommsApi(commerce: Commerce, utilisateur: Utilisateur):
       });
     } catch {
       console.error("comms.echec", { action: appel, statut: "reseau" });
-      throw new Error(INDISPONIBLE);
+      throw new ErreurAffichable(INDISPONIBLE);
     }
     if (res.ok) return res;
     const corps = objet(await res.json().catch(() => null));
     console.error("comms.echec", { action: appel, statut: res.status });
-    if (res.status === 401) throw new Error("Session expirée : reconnectez-vous.");
-    if (res.status === 403) throw new Error("Accès refusé.");
-    if (res.status === 404) throw new Error(INTROUVABLE);
+    if (res.status === 401) throw new ErreurAffichable("Session expirée : reconnectez-vous.");
+    if (res.status === 403) throw new ErreurAffichable("Accès refusé.");
+    if (res.status === 404) throw new ErreurAffichable(INTROUVABLE);
     if (res.status === 409 && corps.error === "expediteur_non_autorise") {
-      throw new Error("Cette boîte ne peut pas envoyer avec cette adresse.");
+      throw new ErreurAffichable("Cette boîte ne peut pas envoyer avec cette adresse.");
     }
-    if (res.status === 400) throw new Error(ERREURS_400[texte(corps.error)] ?? "Demande refusée.");
-    throw new Error(INDISPONIBLE);
+    if (res.status === 400) throw new ErreurAffichable(ERREURS_400[texte(corps.error)] ?? "Demande refusée.");
+    throw new ErreurAffichable(INDISPONIBLE);
   }
 
   const lireJson = async (chemin: string, init?: RequestInit) => objet(await (await appeler(chemin, init)).json());
@@ -251,10 +252,10 @@ export function creerCoreCommsApi(commerce: Commerce, utilisateur: Utilisateur):
     lireConversation,
 
     async repondre(id: string, reponse: Reponse): Promise<Conversation> {
-      if (reponse.piecesJointes?.length) throw new Error(PJ_SORTANTES);
+      if (reponse.piecesJointes?.length) throw new ErreurAffichable(PJ_SORTANTES);
       if (reponse.boiteId) {
         const c = await lireConversation(id);
-        if (reponse.boiteId !== c.boiteId) throw new Error("Répondez depuis la boîte de la conversation.");
+        if (reponse.boiteId !== c.boiteId) throw new ErreurAffichable("Répondez depuis la boîte de la conversation.");
       }
       await lireJson(`${cheminFil(id)}/reply`, {
         method: "POST",
@@ -264,7 +265,7 @@ export function creerCoreCommsApi(commerce: Commerce, utilisateur: Utilisateur):
     },
 
     async ecrire(m: NouveauMessage): Promise<Conversation> {
-      if (m.piecesJointes?.length) throw new Error(PJ_SORTANTES);
+      if (m.piecesJointes?.length) throw new ErreurAffichable(PJ_SORTANTES);
       const r = await lireJson("/api/mail/send", {
         method: "POST",
         body: JSON.stringify({
@@ -277,12 +278,12 @@ export function creerCoreCommsApi(commerce: Commerce, utilisateur: Utilisateur):
         }),
       });
       const filId = texte(r.threadId);
-      if (!filId) throw new Error(INDISPONIBLE);
+      if (!filId) throw new ErreurAffichable(INDISPONIBLE);
       return lireConversation(filId);
     },
 
     async modifierConversation(id: string, m: ModificationConversation): Promise<void> {
-      if (m.suivi !== undefined || m.supprime !== undefined) throw new Error("Action pas encore disponible.");
+      if (m.suivi !== undefined || m.supprime !== undefined) throw new ErreurAffichable("Action pas encore disponible.");
       // Pas de relecture du fil après coup : le détail le marquerait comme lu (« Marquer non lu » serait annulé).
       await lireJson(cheminFil(id), {
         method: "PATCH",
@@ -310,19 +311,19 @@ export function creerCoreCommsApi(commerce: Commerce, utilisateur: Utilisateur):
 
     // IA et paramètres : hors contrat pour l'instant (masqués par `capacites`).
     async resumerConversation() {
-      throw new Error("L'assistant n'est pas encore disponible.");
+      throw new ErreurAffichable("L'assistant n'est pas encore disponible.");
     },
     async redigerBrouillon() {
-      throw new Error("L'assistant n'est pas encore disponible.");
+      throw new ErreurAffichable("L'assistant n'est pas encore disponible.");
     },
     async reecrireTexte() {
-      throw new Error("L'assistant n'est pas encore disponible.");
+      throw new ErreurAffichable("L'assistant n'est pas encore disponible.");
     },
     async lireParametres() {
       return parametresParDefaut();
     },
     async enregistrerParametres() {
-      throw new Error("Paramètres pas encore disponibles.");
+      throw new ErreurAffichable("Paramètres pas encore disponibles.");
     },
   };
 }

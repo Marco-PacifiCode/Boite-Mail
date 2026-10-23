@@ -1,3 +1,4 @@
+import { ErreurAffichable } from "@/lib/erreurs";
 import "server-only";
 
 import type { Commerce } from "@/lib/commerces";
@@ -237,7 +238,7 @@ export class DemoMailApi implements MailApi {
 
   private trouver(id: string): Interne {
     const c = this.m.conversations.get(id);
-    if (!c || !this.boitesPermises().has(c.boiteId)) throw new Error("Conversation introuvable");
+    if (!c || !this.boitesPermises().has(c.boiteId)) throw new ErreurAffichable("Conversation introuvable");
     return c;
   }
 
@@ -329,7 +330,7 @@ export class DemoMailApi implements MailApi {
   private boiteEnvoi(boiteId: string | undefined, repli: string) {
     const id = boiteId && this.boitesPermises().has(boiteId) ? boiteId : repli;
     const b = this.commerce.boites.find((x) => x.id === id);
-    if (!b || !this.boitesPermises().has(b.id)) throw new Error("Boîte d’envoi non autorisée");
+    if (!b || !this.boitesPermises().has(b.id)) throw new ErreurAffichable("Boîte d’envoi non autorisée");
     return b;
   }
 
@@ -408,7 +409,7 @@ export class DemoMailApi implements MailApi {
   async modifierConversation(id: string, mod: ModificationConversation): Promise<void> {
     const c = this.trouver(id);
     if (mod.boiteId !== undefined && mod.boiteId !== c.boiteId) {
-      if (!this.boitesPermises().has(mod.boiteId)) throw new Error("Boîte non autorisée");
+      if (!this.boitesPermises().has(mod.boiteId)) throw new ErreurAffichable("Boîte non autorisée");
       c.boiteId = mod.boiteId;
       c.corrige = true;
       // Correction de Jev, journalisée sans contenu ni adresse (amendement 6).
@@ -436,7 +437,7 @@ export class DemoMailApi implements MailApi {
 
   async telechargerPieceJointe(id: string): Promise<ContenuPieceJointe> {
     const p = this.m.pieces.get(id);
-    if (!p) throw new Error("Pièce jointe introuvable");
+    if (!p) throw new ErreurAffichable("Pièce jointe introuvable");
     this.trouver(p.conversationId);
     const contenu = p.contenu ?? pdfDemo(p.nom.replace(/\.pdf$/i, "").replace(/-/g, " "), p.lignes ?? []);
     return { id: p.id, nom: p.nom, type: p.contenu ? p.type : "application/pdf", taille: contenu.byteLength, contenu };

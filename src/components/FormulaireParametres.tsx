@@ -1,5 +1,7 @@
 "use client";
 
+import { appel } from "@/lib/erreurs";
+
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { enregistrerParametres, seDeconnecter } from "@/app/actions";
@@ -165,7 +167,7 @@ export function FormulaireParametres({
   const enregistrer = () =>
     demarrer(async () => {
       try {
-        setP(await enregistrerParametres(p));
+        setP(await appel(enregistrerParametres(p)));
         dire("Paramètres enregistrés");
       } catch (e) {
         dire(e instanceof Error ? e.message : "L’enregistrement a échoué.");
